@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doctor-console",
+  "main": "src/server.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "services": [
+    // Live span and log stream.
+    { "binding": "TELEMETRY", "service": "telemetry" },
+    // "Run sync now" and the lookup's health, without going through public URLs.
+    { "binding": "SYNC", "service": "directory-sync" },
+    { "binding": "LOOKUP", "service": "doctor-lookup" }
+  ],
+  // Operator switches (control/flags.json) that doctor-lookup reads.
+  "r2_buckets": [
+    { "binding": "DATA", "bucket_name": "doctor-directory-data", "jurisdiction": "eu" }
+  ],
+  // Secret: SYNC_TOKEN (directory-sync); CF_ANALYTICS_TOKEN and ELEVENLABS_API_KEY for usage and config.
+  "observability": { "enabled": true }
+}
