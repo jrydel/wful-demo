@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "directory-sync",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  // Reach the upstream like any outside client. Without this, a fetch to another Worker on the
+  // same workers.dev subdomain (the directory-api stand-in) never reaches it and returns 404.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "r2_buckets": [
+    { "binding": "DATA", "bucket_name": "doctor-directory-data", "jurisdiction": "eu" }
+  ],
+  // Spans and logs go live to the telemetry hub, which the console streams.
+  "services": [{ "binding": "TELEMETRY", "service": "telemetry" }],
+  // Each run is a Workflow instance: pull, validate and publish as separately retried steps,
+  // with no wall-clock limit on the slow pull.
+  "workflows": [
+    { "name": "directory-sync", "binding": "SYNC_WORKFLOW", "class_name": "SyncWorkflow" }
+  ],
+  // Daily at 03:00 UTC; the cron only starts a Workflow run.
+  "triggers": { "crons": ["0 3 * * *"] },
+  "vars": {
+    "SYNC_TIMEOUT": "40 minutes",
+    "MIN_COUNT_RATIO": "0.9"
+  },
+  // SOURCE_URL may carry credentials: `wrangler secret put SOURCE_URL` (locally: .dev.vars).
+  "observability": { "enabled": true, "traces": { "enabled": true } }
+}
