@@ -67,6 +67,47 @@ test("a new Search DB is served without a redeploy; a broken one keeps the curre
   ]);
 });
 
+function publishedBucket(): Bucket {
+  const bucket = memoryBucket();
+  const asOf = "2026-09-01T00:00:00.000Z";
+  void bucket.put(
+    "search-index.json",
+    JSON.stringify(buildSearchIndex({ fetchedAt: asOf, doctors: [daria] }, "trace", asOf)),
+  );
+  return bucket;
+}
+
+const findDaria = DoctorDirectory.use((directory) =>
+  directory.find({ name: "Daria Munteanu" }).pipe(Effect.map((result) => result.status)),
+);
+
+test("a failed read of the Search DB is retried on the next lookup", async () => {
+  const bucket = publishedBucket();
+  let failNextRead = true;
+  const flaky: Bucket = {
+    ...bucket,
+    get: (key) => {
+      if (key === "search-index.json" && failNextRead) {
+        failNextRead = false;
+        return Promise.reject(new Error("R2 read failed"));
+      }
+      return bucket.get(key);
+    },
+  };
+  const statuses = await Effect.all([findDaria, findDaria]).pipe(
+    Effect.provide(directoryLayer(flaky)),
+    Effect.runPromise,
+  );
+  expect(statuses).toEqual(["unavailable", "found"]);
+});
+
+test("concurrent lookups on a new instance all get the Search DB", async () => {
+  const statuses = await Effect.all([findDaria, findDaria, findDaria], {
+    concurrency: "unbounded",
+  }).pipe(Effect.provide(directoryLayer(publishedBucket())), Effect.runPromise);
+  expect(statuses).toEqual(["found", "found", "found"]);
+});
+
 async function lookupWithFlags(flags: string | undefined) {
   const bucket = memoryBucket();
   const asOf = "2026-09-01T00:00:00.000Z";

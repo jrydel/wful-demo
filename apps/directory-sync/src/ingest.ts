@@ -57,10 +57,10 @@ export function parseDump(records: ReadonlyArray<unknown>): ParsedDump {
 }
 
 const DB_KEY = "doctors.json";
-/** The raw dump between the pull step and the validate step of a sync run. */
-const STAGED_KEY = "incoming/dump.json";
+/** The raw dump between the pull step and the validate step, one object per sync run. */
+const stagedKey = (runId: string) => `incoming/${runId}.json`;
 
-/** The DB (the last good pull, validated and deduplicated) and the staged raw dump, in R2. */
+/** The DB (the last good pull, validated and deduplicated) and the staged raw dumps, in R2. */
 export class DoctorDb extends Context.Service<
   DoctorDb,
   {
@@ -71,8 +71,9 @@ export class DoctorDb extends Context.Service<
     readonly count: Effect.Effect<Option.Option<number>, DoctorDbError>;
     readonly load: Effect.Effect<Option.Option<Snapshot>, DoctorDbError>;
     save(snapshot: Snapshot): Effect.Effect<void, DoctorDbError>;
-    stage(raw: string): Effect.Effect<void, DoctorDbError>;
-    readonly readStaged: Effect.Effect<Option.Option<string>, DoctorDbError>;
+    stage(runId: string, raw: string): Effect.Effect<void, DoctorDbError>;
+    readStaged(runId: string): Effect.Effect<Option.Option<string>, DoctorDbError>;
+    discardStaged(runId: string): Effect.Effect<void, DoctorDbError>;
   }
 >()("directory-sync/DoctorDb") {
   static readonly layer = Layer.effect(
@@ -121,13 +122,19 @@ export class DoctorDb extends Context.Service<
       const save = Effect.fn("DoctorDb.save")((snapshot: Snapshot) =>
         write(DB_KEY, JSON.stringify(snapshot)),
       );
-      const stage = Effect.fn("DoctorDb.stage")((raw: string) => write(STAGED_KEY, raw));
-      const readStaged = text(STAGED_KEY).pipe(
-        Effect.mapError(failed(STAGED_KEY)),
-        Effect.withSpan("DoctorDb.readStaged"),
+      const stage = Effect.fn("DoctorDb.stage")((runId: string, raw: string) =>
+        write(stagedKey(runId), raw),
+      );
+      const readStaged = Effect.fn("DoctorDb.readStaged")((runId: string) =>
+        text(stagedKey(runId)).pipe(Effect.mapError(failed(stagedKey(runId)))),
+      );
+      const discardStaged = Effect.fn("DoctorDb.discardStaged")((runId: string) =>
+        Effect.tryPromise(() => bucket.delete(stagedKey(runId))).pipe(
+          Effect.mapError(failed(stagedKey(runId))),
+        ),
       );
 
-      return DoctorDb.of({ count, load, save, stage, readStaged });
+      return DoctorDb.of({ count, load, save, stage, readStaged, discardStaged });
     }),
   );
 }
@@ -151,14 +158,17 @@ export interface Applied {
 export class Ingest extends Context.Service<
   Ingest,
   {
-    /** Pulls the full dump and stages it unparsed, however long the upstream takes. */
-    readonly pull: Effect.Effect<Pulled, UpstreamError | DoctorDbError>;
     /**
-     * Validates the staged dump and replaces the DB. The dump is a full state, so doctors removed
-     * upstream disappear. An empty dump, or one that shrank below MIN_COUNT_RATIO, is refused and
-     * the last good DB stays.
+     * Pulls the full dump and stages it unparsed under the run's id, however long the upstream
+     * takes; overlapping runs never read each other's dump.
      */
-    apply(fetchedAt: string): Effect.Effect<Applied, DumpRejected | DoctorDbError>;
+    pull(runId: string): Effect.Effect<Pulled, UpstreamError | DoctorDbError>;
+    /**
+     * Validates the run's staged dump and replaces the DB. The dump is a full state, so doctors
+     * removed upstream disappear. An empty dump, or one that shrank below MIN_COUNT_RATIO, is
+     * refused, the last good DB stays and the staged dump is kept for inspection.
+     */
+    apply(runId: string, fetchedAt: string): Effect.Effect<Applied, DumpRejected | DoctorDbError>;
   }
 >()("directory-sync/Ingest") {
   static readonly layer = Layer.effect(
@@ -168,16 +178,16 @@ export class Ingest extends Context.Service<
       const upstream = yield* Upstream;
       const db = yield* DoctorDb;
 
-      const pull = Effect.gen(function* () {
+      const pull = Effect.fn("Ingest.pull")(function* (runId: string) {
         const fetchedAt = new Date(yield* Clock.currentTimeMillis).toISOString();
         const raw = yield* upstream.fetchDump;
-        yield* db.stage(raw);
+        yield* db.stage(runId, raw);
         yield* Effect.annotateCurrentSpan("dump.bytes", raw.length);
         return { fetchedAt, bytes: raw.length };
-      }).pipe(Effect.withSpan("Ingest.pull"));
+      });
 
-      const apply = Effect.fn("Ingest.apply")(function* (fetchedAt: string) {
-        const staged = yield* db.readStaged;
+      const apply = Effect.fn("Ingest.apply")(function* (runId: string, fetchedAt: string) {
+        const staged = yield* db.readStaged(runId);
         if (Option.isNone(staged)) {
           return yield* new DumpRejected({ reason: "no staged dump to validate" });
         }
@@ -209,6 +219,10 @@ export class Ingest extends Context.Service<
         }
         yield* db.save({ fetchedAt, doctors });
         yield* Effect.logInfo("DB replaced", { doctors: doctors.length, rejected, duplicates });
+        // The raw dump still holds fields the DB drops (e-mails); a leftover is only untidy.
+        yield* db
+          .discardStaged(runId)
+          .pipe(Effect.catch((error) => Effect.logWarning("staged dump not deleted", error)));
         return { doctors: doctors.length, rejected, duplicates };
       });
 

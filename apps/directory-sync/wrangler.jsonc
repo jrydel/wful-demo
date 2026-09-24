@@ -22,6 +22,6 @@
     "SYNC_TIMEOUT": "40 minutes",
     "MIN_COUNT_RATIO": "0.9"
   },
-  // SOURCE_URL may carry credentials: `wrangler secret put SOURCE_URL` (locally: .dev.vars).
+  // Secrets: SOURCE_URL, SOURCE_TOKEN (sent to it as a bearer token), SYNC_TOKEN (locally: .dev.vars).
   "observability": { "enabled": true, "traces": { "enabled": true } }
 }

@@ -1,8 +1,7 @@
 import { env } from "cloudflare:workers";
+import { CLOUDFLARE_ACCOUNT_ID, ELEVENLABS_AGENT_ID } from "@doctor-directory/shared/deployment";
 import { createServerFn } from "@tanstack/react-start";
-import { AGENT_ID } from "./services";
 
-const ACCOUNT_ID = "6c8959f08233cb34a0bbfa8e664f6648";
 export const SCRIPTS = ["doctor-lookup", "directory-sync", "directory-api"] as const;
 export type Script = (typeof SCRIPTS)[number];
 /** Every Worker this project deploys, including the ones not drawn on the map. */
@@ -119,7 +118,7 @@ export const getCloudflareUsage = createServerFn().handler(async (): Promise<Clo
   const now = new Date();
   const since = monthStart(now).toISOString();
   const today = new Date(now.getTime() - 86_400_000).toISOString();
-  const query = `{ viewer { accounts(filter: {accountTag: "${ACCOUNT_ID}"}) {
+  const query = `{ viewer { accounts(filter: {accountTag: "${CLOUDFLARE_ACCOUNT_ID}"}) {
     workers: workersInvocationsAdaptive(limit: 1000, filter: {datetime_geq: "${since}"}) {
       sum { requests errors subrequests cpuTimeUs } dimensions { scriptName } }
     r2ops: r2OperationsAdaptiveGroups(limit: 1000, filter: {datetime_geq: "${since}"}) {
@@ -296,7 +295,7 @@ export const getAgentUsage = createServerFn().handler(async (): Promise<AgentUsa
   let cursor: string | undefined;
   do {
     const url = new URL("https://api.elevenlabs.io/v1/convai/conversations");
-    url.searchParams.set("agent_id", AGENT_ID);
+    url.searchParams.set("agent_id", ELEVENLABS_AGENT_ID);
     url.searchParams.set("page_size", "100");
     url.searchParams.set("call_start_after_unix", String(Math.floor(since.getTime() / 1000)));
     if (cursor) url.searchParams.set("cursor", cursor);

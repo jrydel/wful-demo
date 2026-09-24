@@ -21,6 +21,8 @@
     "deploy": "bun run --filter './apps/*' deploy",
     "test": "bun test",
     "docs:diagrams": "bun docs/diagrams/render.ts",
+    "agent:check": "bun apps/doctor-lookup/agent/agent.ts check",
+    "agent:push": "bun apps/doctor-lookup/agent/agent.ts push",
     "check": "biome check . && tsc --noEmit && tsc --noEmit -p apps/telemetry && tsc --noEmit -p apps/console"
   },
   "devDependencies": {

@@ -6,7 +6,11 @@ import {
 } from "@doctor-directory/shared/control-flags";
 import { createServerFn } from "@tanstack/react-start";
 
-export type SyncStart = { status: "started"; id: string } | { status: "unauthorized" };
+/** "running": a run was already going (only one at a time); `id` is that run. */
+export type SyncStart =
+  | { status: "started"; id: string }
+  | { status: "running"; id: string }
+  | { status: "unauthorized" };
 
 export interface SyncProgress {
   readonly id: string;

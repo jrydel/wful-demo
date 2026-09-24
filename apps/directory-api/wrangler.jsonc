@@ -7,5 +7,6 @@
   // Spans and logs go live to the telemetry hub, which the console streams.
   "services": [{ "binding": "TELEMETRY", "service": "telemetry" }],
   "vars": { "DIRECTORY_DELAY": "15 minutes" },
+  // SOURCE_TOKEN is a secret shared with directory-sync: `wrangler secret put SOURCE_TOKEN`.
   "observability": { "enabled": true }
 }

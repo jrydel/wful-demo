@@ -1,5 +1,5 @@
-import { Context, Effect, Layer, Schedule, Schema } from "effect";
-import { FetchHttpClient, HttpClient } from "effect/unstable/http";
+import { Context, Effect, Layer, Option, Schedule, Schema } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/unstable/http";
 import { SyncConfig } from "./config";
 
 export class UpstreamError extends Schema.TaggedError<UpstreamError>()("UpstreamError", {
@@ -14,12 +14,16 @@ export class Upstream extends Context.Service<
   static readonly layer = Layer.effect(
     Upstream,
     Effect.gen(function* () {
-      const { source, timeout } = yield* SyncConfig;
+      const { source, sourceToken, timeout } = yield* SyncConfig;
       const client = (yield* HttpClient.HttpClient).pipe(
         HttpClient.filterStatusOk,
         HttpClient.retryTransient({ schedule: Schedule.exponential("30 seconds"), times: 2 }),
       );
-      const fetchDump = client.get(source).pipe(
+      const request = Option.match(sourceToken, {
+        onNone: () => HttpClientRequest.get(source),
+        onSome: (token) => HttpClientRequest.get(source).pipe(HttpClientRequest.bearerToken(token)),
+      });
+      const fetchDump = client.execute(request).pipe(
         Effect.flatMap((response) => response.text),
         Effect.timeout(timeout),
         Effect.mapError((cause) => new UpstreamError({ cause })),

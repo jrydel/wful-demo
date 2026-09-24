@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
+import { ELEVENLABS_AGENT_ID } from "@doctor-directory/shared/deployment";
 import { createServerFn } from "@tanstack/react-start";
-import { AGENT_ID } from "./services";
 
 // Call history is ElevenLabs' own record: the agent keeps every conversation (retention -1),
 // so the console reads it instead of storing a copy.
@@ -90,7 +90,7 @@ function summarize(c: ListedConversation): CallSummary {
 export const listCalls = createServerFn().handler(async (): Promise<CallList> => {
   try {
     const page = await elevenlabs<{ conversations: ListedConversation[] }>(
-      `/v1/convai/conversations?agent_id=${AGENT_ID}&page_size=50`,
+      `/v1/convai/conversations?agent_id=${ELEVENLABS_AGENT_ID}&page_size=50`,
     );
     return { available: true, calls: page.conversations.map(summarize) };
   } catch (error) {

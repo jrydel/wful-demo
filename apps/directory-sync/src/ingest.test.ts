@@ -40,29 +40,33 @@ test("parsing keeps namesakes, drops exact copies, keeps the phone and drops the
   expect(doctors[0]).not.toHaveProperty("education");
 });
 
-/** Both steps of a sync run, as the Workflow runs them: pull and stage, then validate and save. */
-function ingestRun(bucket: Bucket, dump: () => unknown[] | string) {
+function ingestLayer(bucket: Bucket, dump: () => unknown[] | string) {
   const raw = () => {
     const value = dump();
     return typeof value === "string" ? value : JSON.stringify(value);
   };
-  return Ingest.use((ingest) =>
-    ingest.pull.pipe(
-      Effect.flatMap((pulled) =>
-        ingest.apply(pulled.fetchedAt).pipe(Effect.map((applied) => ({ ...pulled, ...applied }))),
-      ),
-    ),
-  ).pipe(
-    Effect.provide(
-      IngestLive.pipe(
-        Layer.provide(Layer.succeed(Upstream, { fetchDump: Effect.sync(raw) })),
-        Layer.provide(Layer.succeed(DataBucket, bucket)),
-        Layer.provide(
-          ConfigProvider.layer(ConfigProvider.fromUnknown({ SOURCE_URL: "https://upstream.test" })),
-        ),
-      ),
+  return IngestLive.pipe(
+    Layer.provide(Layer.succeed(Upstream, { fetchDump: Effect.sync(raw) })),
+    Layer.provide(Layer.succeed(DataBucket, bucket)),
+    Layer.provide(
+      ConfigProvider.layer(ConfigProvider.fromUnknown({ SOURCE_URL: "https://upstream.test" })),
     ),
   );
+}
+
+/** Both steps of a sync run, as the Workflow runs them: pull and stage, then validate and save. */
+function ingestRun(bucket: Bucket, dump: () => unknown[] | string) {
+  return Ingest.use((ingest) =>
+    ingest
+      .pull("run")
+      .pipe(
+        Effect.flatMap((pulled) =>
+          ingest
+            .apply("run", pulled.fetchedAt)
+            .pipe(Effect.map((applied) => ({ ...pulled, ...applied }))),
+        ),
+      ),
+  ).pipe(Effect.provide(ingestLayer(bucket, dump)));
 }
 
 const full = Array.from({ length: 10 }, (_, i) => record(`Name${i}`, "Cardiology", `Strada ${i}`));
@@ -108,4 +112,22 @@ test("an upstream answer that is not JSON is refused and the DB stays", async ()
   expect(error).toMatchObject({ _tag: "DumpRejected", reason: "dump is not valid JSON" });
   const kept = JSON.parse((await (await bucket.get("doctors.json"))?.text()) ?? "null");
   expect(kept.doctors).toHaveLength(10);
+});
+
+test("overlapping runs each validate the dump they pulled", async () => {
+  const bucket = memoryBucket();
+  const dumps = [full, full.slice(0, 9)];
+  await Ingest.use((ingest) =>
+    Effect.gen(function* () {
+      const first = yield* ingest.pull("first");
+      yield* ingest.pull("second");
+      yield* ingest.apply("first", first.fetchedAt);
+    }),
+  ).pipe(Effect.provide(ingestLayer(bucket, () => dumps.shift() ?? [])), Effect.runPromise);
+
+  const db = JSON.parse((await (await bucket.get("doctors.json"))?.text()) ?? "null");
+  expect(db.doctors).toHaveLength(10);
+  // The applied run's raw dump is gone; the other run's is still waiting for its own step.
+  expect(await bucket.get("incoming/first.json")).toBeNull();
+  expect(await bucket.get("incoming/second.json")).not.toBeNull();
 });

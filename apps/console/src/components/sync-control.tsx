@@ -48,9 +48,14 @@ export function SyncControl() {
     try {
       const started = await runSyncNow();
       setState(
-        started.status === "started"
-          ? { phase: "running", id: started.id, status: "queued" }
-          : { phase: "failed", message: "Sync token rejected" },
+        started.status === "unauthorized"
+          ? { phase: "failed", message: "Sync token rejected" }
+          : // Only one run at a time: if one is going, follow it instead.
+            {
+              phase: "running",
+              id: started.id,
+              status: started.status === "started" ? "queued" : "running",
+            },
       );
     } catch (error) {
       setState({
@@ -73,7 +78,8 @@ export function SyncControl() {
         </TooltipTrigger>
         <TooltipContent className="max-w-72">
           Starts the same Workflow the 03:00 UTC cron starts: pull the full dump (about 15 minutes),
-          validate, publish. It runs on Cloudflare, so closing this tab does not stop it.
+          validate, publish. Only one run at a time; if one is going, this follows it. It runs on
+          Cloudflare, so closing this tab does not stop it.
         </TooltipContent>
       </Tooltip>
     </div>

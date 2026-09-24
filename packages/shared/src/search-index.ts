@@ -104,6 +104,12 @@ export class SearchIndexError extends Schema.TaggedError<SearchIndexError>()("Se
   cause: Schema.Defect(),
 }) {}
 
+/** The published object was read but does not decode: a broken publish or another format. */
+export class SearchIndexInvalid extends Schema.TaggedError<SearchIndexInvalid>()(
+  "SearchIndexInvalid",
+  { key: Schema.String, cause: Schema.Defect() },
+) {}
+
 const SEARCH_INDEX_KEY = "search-index.json";
 
 /** The Search DB as one R2 object; R2 replaces objects atomically, so readers never see half. */
@@ -112,8 +118,11 @@ export class SearchIndexStore extends Context.Service<
   {
     /** The object's ETag: changes with every publish; None until the first one. */
     readonly version: Effect.Effect<Option.Option<string>, SearchIndexError>;
-    /** None until the first publish; fails if the object does not decode. */
-    readonly load: Effect.Effect<Option.Option<SearchIndex>, SearchIndexError>;
+    /**
+     * None until the first publish. Fails with SearchIndexInvalid if the object does not decode,
+     * SearchIndexError if it could not be read.
+     */
+    readonly load: Effect.Effect<Option.Option<SearchIndex>, SearchIndexError | SearchIndexInvalid>;
     publish(index: SearchIndex): Effect.Effect<void, SearchIndexError>;
   }
 >()("doctor-directory/SearchIndexStore") {
@@ -130,10 +139,16 @@ export class SearchIndexStore extends Context.Service<
       );
 
       const load = Effect.gen(function* () {
-        const object = yield* Effect.tryPromise(() => bucket.get(SEARCH_INDEX_KEY));
+        const object = yield* Effect.tryPromise(() => bucket.get(SEARCH_INDEX_KEY)).pipe(
+          Effect.mapError(failed),
+        );
         if (object === null) return Option.none<SearchIndex>();
-        return Option.some(yield* decode(yield* Effect.tryPromise(() => object.text())));
-      }).pipe(Effect.mapError(failed), Effect.withSpan("SearchIndexStore.load"));
+        const text = yield* Effect.tryPromise(() => object.text()).pipe(Effect.mapError(failed));
+        const index = yield* decode(text).pipe(
+          Effect.mapError((cause) => new SearchIndexInvalid({ key: SEARCH_INDEX_KEY, cause })),
+        );
+        return Option.some(index);
+      }).pipe(Effect.withSpan("SearchIndexStore.load"));
 
       const publish = Effect.fn("SearchIndexStore.publish")((index: SearchIndex) =>
         Effect.tryPromise(() =>

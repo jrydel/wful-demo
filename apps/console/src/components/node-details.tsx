@@ -289,7 +289,7 @@ function workerFacts(worker: WorkerConfig): Fact[] {
       ? [
           {
             label: "Deployed",
-            value: `${new Date(worker.deployed.at).toLocaleString(undefined, { hour12: false })} by ${worker.deployed.by}`,
+            value: new Date(worker.deployed.at).toLocaleString(undefined, { hour12: false }),
           },
           { label: "Version", value: worker.deployed.version },
         ]

@@ -12,5 +12,3 @@ export const SERVICE_FILL: Record<ServiceName, string> = {
   "directory-sync": "fill-service-sync",
   "directory-api": "fill-service-api",
 };
-
-export const AGENT_ID = "agent_4201m39wmxxvf76snhp94gwajr7c";

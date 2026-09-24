@@ -1,3 +1,4 @@
+import { ELEVENLABS_AGENT_ID } from "@doctor-directory/shared/deployment";
 import { ConversationProvider, type ConversationStatus, useConversation } from "@elevenlabs/react";
 import {
   MicIcon,
@@ -48,7 +49,6 @@ import {
 } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AGENT_ID } from "@/lib/services";
 import { formatDuration, type TraceView, traceForToolCall } from "@/lib/traces";
 import { CallHistory } from "./call-history";
 
@@ -168,7 +168,7 @@ function VoiceConsole({ traces, onSelectTrace, onActivity }: VoicePanelProps) {
     setEntries([]);
     setView("live");
     setConversationId(undefined);
-    conversation.startSession({ agentId: AGENT_ID, connectionType: "webrtc" });
+    conversation.startSession({ agentId: ELEVENLABS_AGENT_ID, connectionType: "webrtc" });
   };
 
   const send = () => {

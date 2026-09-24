@@ -36,10 +36,10 @@ The diagrams are generated: edit `docs/diagrams/render.ts`, then `bun run docs:d
 |---|---|---|
 | User | Browser via the console (WebRTC); a Twilio number is the next step | `apps/console` |
 | Voice service | ElevenLabs Agents: Scribe realtime speech-to-text, Flash v2 text-to-speech, turn-taking | ElevenLabs |
-| Agent · Prompt/Skills | System prompt and the `find_doctor` webhook tool, versioned in the repo and pushed via API | `apps/doctor-lookup/agent` |
+| Agent · Prompt/Skills | System prompt and the `find_doctor` webhook tool, versioned in the repo; `bun run agent:push` updates ElevenLabs, `bun run agent:check` reports drift | `apps/doctor-lookup/agent` |
 | Agent · Context | Claude Haiku 4.5, temperature 0; the conversation is the context | ElevenLabs |
 | Search DB | `search-index.json` in R2, loaded into each `doctor-lookup` instance | `packages/shared/src/search-index.ts` |
-| API | The client's directory API; `directory-api` reproduces it (nothing for 15 minutes, then the full JSON) | `apps/directory-api` |
+| API | The client's directory API; `directory-api` reproduces it (bearer token; nothing for 15 minutes, then the full JSON) | `apps/directory-api` |
 | Schema validation, Deduplication | Workflow step 2: Effect Schema per record, exact duplicates dropped | `apps/directory-sync/src/ingest.ts` |
 | DB | `doctors.json` in R2, the last good pull | `apps/directory-sync` |
 | Data processor | Workflow step 3: normalized names, cities, counties, specialties | `packages/shared/src/search-index.ts` |
@@ -69,7 +69,7 @@ The diagrams are generated: edit `docs/diagrams/render.ts`, then `bun run docs:d
 
 The prompt forbids the agent from answering existence questions or addresses from its own knowledge; addresses come only from a `found` result.
 
-**A sync.** The cron (or the console) starts a Workflow instance: pull the dump into `incoming/dump.json`, validate and deduplicate into `doctors.json` (refused if it has fewer than 90% of the previous doctor count, or is not JSON), then build and publish `search-index.json`. `doctor-lookup` instances check for a new version at most every 10 seconds and swap it in without a redeploy.
+**A sync.** The cron (or the console) starts a Workflow instance, unless the last one is still running: pull the dump into `incoming/<run id>.json` (one file per run, deleted once saved), validate and deduplicate into `doctors.json` (refused if it has fewer than 90% of the previous doctor count, or is not JSON), then build and publish `search-index.json`. `doctor-lookup` instances check for a new version at most every 10 seconds and swap it in without a redeploy; requests on a new instance each load it until one has (a request may not wait on another request's I/O in Workers), and a failed read is retried on the next request.
 
 **Observability.** Each Worker reports span starts, span ends and logs to the telemetry hub while it runs, so a 15-minute pull is visible as it happens. Trace context propagates over HTTP, so the sync and the upstream appear in one trace; tool calls carry the ElevenLabs conversation id.
 
@@ -82,13 +82,13 @@ The [console](https://doctor-console.it-c89.workers.dev) shows:
 - **Voice panel:** call the agent from the browser; **History** lists every call with ElevenLabs' summary, cost, tokens and transcript, linked to backend traces.
 - **Escalations:** when the data cannot be read, the agent tells the caller it cannot answer now, that the problem was escalated, and to call back; `doctor-lookup` logs an error with the conversation id and the query. The header counts them; the traces list and map highlight them.
 - **Simulate outage:** a switch that makes every lookup unavailable, to rehearse escalations.
-- **Run sync now:** starts the same Workflow as the cron.
+- **Run sync now:** starts the same Workflow as the cron; while a run is going, it follows that run instead of starting another.
 
 ## Risks
 
 | Risk | Impact | Mitigation / next step |
 |---|---|---|
-| **Console is public** (decided for the demo) | Anyone with the URL sees callers' queries and conversation ids, can switch on the outage simulation and start syncs. | Put it behind Cloudflare Access before real callers. |
+| **Console is public** (decided for the demo) | Anyone with the URL reads every call: full transcripts and ElevenLabs' summaries, callers' queries and conversation ids. It also shows Worker configuration (bindings, plain-text variables, secret names but never values), usage and cost, and anyone can switch on the outage simulation or start a sync (one run at a time, about 15 minutes of upstream load). | Put it behind Cloudflare Access before real callers; until then, treat every call as public. |
 | **Upstream offers only full dumps, no stable IDs** | Every sync moves the whole dataset (~15 min); deduplication can only drop exact copies; namesakes stay separate (the sample has 616 e-mails shared by 1,285 records). | Ask the client for an incremental "changed since" endpoint and stable IDs. |
 | **Voice data retention** | ElevenLabs records calls and keeps conversations indefinitely (retention −1); audio is processed outside the EU even though the directory is in EU R2. | Set a retention period, decide on recording, sign a DPA; the console deliberately does not expose recordings. |
 | **Prompt-enforced behavior** | Some rules (no guessing, language switching, not offering transfers) depend on the model following the prompt; it once reasoned about a city on its own. | Rules that matter are also in code: addresses and phones only exist in `found` results; lists are capped at 3 names. Keep regression calls as tests. |
@@ -99,6 +99,8 @@ The [console](https://doctor-console.it-c89.workers.dev) shows:
 | **Time zone** | The agent resolves "tomorrow" from UTC; around midnight Romanian time it can pick the wrong weekday. | Set the agent time zone to Europe/Bucharest. |
 | **Short-lived API key** | The console's ElevenLabs key expires after 7 days; call history, cost and configuration panels stop until it is replaced. | Replace it with a long-lived, read-only key. |
 | **Telemetry retention** | The hub keeps the latest 5,000 events; older traces are gone (Cloudflare Workers Logs keep their own copy). | Export to a long-term store (e.g. OTLP) if audits need it. |
+| **Pre-release dependencies** | Effect 4 is a release candidate (`4.0.0-rc.117`) and TypeScript 7 is the new native compiler; APIs can change between versions. | Versions are pinned exactly (Bun catalog and lockfile); upgrade deliberately, with CI running checks and tests on every push. |
+| **Tool enums follow the data** | The `specialty` and `language` values the agent may pass are listed in `find-doctor.tool.json`; a specialty new upstream would be missing, so the agent could not ask for it. | `bun run agent:check` compares the enums with the published Search DB (and the prompt and tool with ElevenLabs); run it after syncs that change the data. |
 
 ## Scaling
 
@@ -173,20 +175,21 @@ Built on 24 September 2026, in one day, using [oh-my-pi](https://github.com/can1
 
 **The coding agents' part:** the detailed design within that frame (the Search DB format, the telemetry hub, the staged Workflow steps), the code and tests, deployments, checking platform limits against the documentation, and this README from my direction.
 
-**How it was checked:** Biome and TypeScript on every change, 21 unit tests on the lookup, sync and schedule parsing, and end-to-end checks in production: real agent calls in English and Czech, a 15-minute sync Workflow run, the outage switch with a real escalated call, and every console panel in a browser.
+**How it was checked:** Biome and TypeScript on every change, 24 unit tests on the lookup (including a failed Search DB read and concurrent first requests), the sync (including overlapping runs) and schedule parsing, and end-to-end checks in production: real agent calls in English and Czech, a 15-minute sync Workflow run, the outage switch with a real escalated call, and every console panel in a browser. CI runs the checks and tests on every push.
 
 ## Repository
 
 ```
 apps/
-  doctor-lookup/    find_doctor API (Effect HttpApi), outage switch; agent/ holds the prompt and tool definition
+  doctor-lookup/    find_doctor API (Effect HttpApi), outage switch; agent/ holds the prompt, tool definition and push/check script
   directory-sync/   the sync Workflow: pull, validate + deduplicate, publish
   directory-api/    stand-in for the client's slow upstream API
   telemetry/        Durable Object hub for live spans and logs
   console/          operations console (TanStack Start, shadcn)
-packages/shared/    doctor schema, search index, telemetry, R2 and auth helpers
+packages/shared/    doctor schema, search index, telemetry, R2 and auth helpers, deployment IDs
 dev/gateway/        local-only router for running several Workers together
-docs/               the original architecture sketch
+docs/               the original architecture sketch and the generated diagrams
+.github/workflows/  CI: Biome, TypeScript and tests on every push
 ```
 
 ## Development
@@ -202,6 +205,12 @@ bun run sync:now              # start a sync Workflow locally
 bun run --filter @doctor-directory/console dev
 bun run check                 # Biome and TypeScript
 bun test
+bun --env-file=.env.production run agent:check   # prompt, tool and enums vs ElevenLabs and the data
+bun --env-file=.env.production run agent:push    # update the agent's prompt and tool from agent/
 ```
 
-Deploy order: `telemetry` first (the others bind to it), then `directory-api`, `directory-sync`, `doctor-lookup`, `console`. Secrets are set with `wrangler secret put` (`TOOL_TOKEN`, `SYNC_TOKEN`, `SOURCE_URL`, and for the console `SYNC_TOKEN`, `CF_ANALYTICS_TOKEN`, `ELEVENLABS_API_KEY`).
+Deploy order: `telemetry` first (the others bind to it), then `directory-api`, `directory-sync`, `doctor-lookup`, `console`. Secrets are set with `wrangler secret put`: `TOOL_TOKEN` (doctor-lookup); `SOURCE_URL`, `SOURCE_TOKEN`, `SYNC_TOKEN` (directory-sync); the same `SOURCE_TOKEN` (directory-api); `SYNC_TOKEN`, `CF_ANALYTICS_TOKEN`, `ELEVENLABS_API_KEY` (console).
+
+A fork sets its own Cloudflare account, ElevenLabs agent and tool IDs in `packages/shared/src/deployment.ts` (identifiers, not secrets) and its own bucket names in each `wrangler.jsonc`.
+
+License: [MIT](LICENSE).

@@ -1,13 +1,16 @@
 import { env } from "cloudflare:workers";
+import {
+  CLOUDFLARE_ACCOUNT_ID,
+  ELEVENLABS_AGENT_ID,
+  ELEVENLABS_TOOL_ID,
+} from "@doctor-directory/shared/deployment";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { AGENT_ID } from "./services";
 import type { Fact } from "./topology";
 import { SCRIPTS, type Script } from "./usage";
 
-const ACCOUNT = "https://api.cloudflare.com/client/v4/accounts/6c8959f08233cb34a0bbfa8e664f6648";
+const ACCOUNT = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}`;
 const DATA_BUCKET = { name: "doctor-directory-data", jurisdiction: "eu" };
-const TOOL_ID = "tool_3201m39xzp15ermvkhn3vq3cpqce";
 
 /** R2 location hints, as the API reports them. */
 const LOCATIONS: Record<string, string> = {
@@ -29,9 +32,7 @@ export interface WorkerConfig {
   readonly secrets: ReadonlyArray<string>;
   readonly compatibility: string;
   readonly crons: ReadonlyArray<string>;
-  readonly deployed:
-    | { readonly at: string; readonly by: string; readonly version: string }
-    | undefined;
+  readonly deployed: { readonly at: string; readonly version: string } | undefined;
 }
 
 export interface BucketConfig {
@@ -151,7 +152,6 @@ async function workerConfig(
       cloudflare<{
         deployments: {
           created_on: string;
-          author_email: string;
           versions: { version_id: string }[];
         }[];
       }>(token, `/workers/scripts/${script}/deployments`),
@@ -174,7 +174,6 @@ async function workerConfig(
     crons: schedules?.schedules.map((sc) => sc.cron) ?? [],
     deployed: latest && {
       at: latest.created_on,
-      by: latest.author_email,
       version: latest.versions[0]?.version_id ?? "",
     },
   };
@@ -251,7 +250,7 @@ export const getAgentConfig = createServerFn().handler(async (): Promise<AgentCo
         turn?: { soft_timeout_config?: { timeout_seconds?: number } };
       };
       platform_settings: { call_limits: { agent_concurrency_limit: number; daily_limit: number } };
-    }>(`/v1/convai/agents/${AGENT_ID}`);
+    }>(`/v1/convai/agents/${ELEVENLABS_AGENT_ID}`);
     const c = agent.conversation_config;
     const [voice, tool] = await Promise.all([
       get<{ name: string }>(`/v1/voices/${c.tts.voice_id}`),
@@ -261,7 +260,7 @@ export const getAgentConfig = createServerFn().handler(async (): Promise<AgentCo
           response_timeout_secs: number;
           api_schema: { url: string; method: string; request_headers: Record<string, unknown> };
         };
-      }>(`/v1/convai/tools/${TOOL_ID}`),
+      }>(`/v1/convai/tools/${ELEVENLABS_TOOL_ID}`),
     ]);
     const builtIns = Object.entries(c.agent.prompt.built_in_tools)
       .filter(([, value]) => value)

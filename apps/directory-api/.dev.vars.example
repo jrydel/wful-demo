@@ -1,2 +1,4 @@
 # Local settings for `wrangler dev`; copy to .dev.vars. Much shorter than the deployed 15 minutes.
 DIRECTORY_DELAY=10 seconds
+# In production: wrangler secret put SOURCE_TOKEN. Must match SOURCE_TOKEN of directory-sync.
+SOURCE_TOKEN=dev-source-token

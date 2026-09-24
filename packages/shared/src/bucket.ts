@@ -15,6 +15,7 @@ export interface Bucket {
     value: string,
     options?: { readonly httpMetadata?: { readonly contentType?: string } },
   ): Promise<unknown>;
+  delete(key: string): Promise<void>;
 }
 
 /** The R2 bucket a Worker reads and writes, from its wrangler binding. */
@@ -35,6 +36,9 @@ export function memoryBucket(): Bucket {
     put: async (key, value) => {
       writes++;
       objects.set(key, { text: value, etag: `etag-${writes}` });
+    },
+    delete: async (key) => {
+      objects.delete(key);
     },
   };
 }

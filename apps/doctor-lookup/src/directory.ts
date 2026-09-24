@@ -45,16 +45,30 @@ export class DoctorDirectory extends Context.Service<
         yield* Effect.logInfo("search index loaded", { asOf, syncTraceId });
       }).pipe(Effect.withSpan("DoctorDirectory.load"));
 
-      // Runs inside the caller's request: a Worker may not use R2 from a background timer.
-      const refreshIfDue = Effect.gen(function* () {
+      // Without an index every request checks; with one, at most once per reloadInterval.
+      const due = Effect.gen(function* () {
+        if (Option.isNone(yield* Ref.get(current))) return true;
         const now = yield* Clock.currentTimeMillis;
-        if (now - (yield* Ref.get(checkedAt)) < Duration.toMillis(reloadInterval)) return;
-        yield* Ref.set(checkedAt, now);
+        return now - (yield* Ref.get(checkedAt)) >= Duration.toMillis(reloadInterval);
+      });
+
+      // Runs inside the caller's request: a Worker may not use R2 from a background timer, and a
+      // request must not wait on another request's I/O (the runtime cancels it as hung). So
+      // concurrent requests on a new instance each load the index; on a warm instance the first
+      // one due checks for a new version while the others serve the current index.
+      const refreshIfDue = Effect.gen(function* () {
+        if (!(yield* due)) return;
+        yield* Ref.set(checkedAt, yield* Clock.currentTimeMillis);
         const version = yield* store.version;
         if (Option.isNone(version) || version.value === (yield* Ref.get(seenVersion))) return;
-        // Remember the version before loading, so a broken object is reported once, not per check.
+        yield* load.pipe(
+          // A file that does not decode is reported once, not at every check; a failed read is
+          // retried.
+          Effect.tapError((error) =>
+            error._tag === "SearchIndexInvalid" ? Ref.set(seenVersion, version.value) : Effect.void,
+          ),
+        );
         yield* Ref.set(seenVersion, version.value);
-        yield* load;
       }).pipe(
         Effect.catch((error) =>
           Effect.logError("search index not loaded; serving the previous one", error),

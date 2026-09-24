@@ -176,7 +176,7 @@ export class SyncWorkflow extends WorkflowEntrypoint<Env, SyncParams> {
           runStep(
             this.env,
             root,
-            Ingest.use((ingest) => ingest.pull),
+            Ingest.use((ingest) => ingest.pull(event.instanceId)),
           ),
       );
       const applied = await step.do(
@@ -186,7 +186,7 @@ export class SyncWorkflow extends WorkflowEntrypoint<Env, SyncParams> {
           runStep(
             this.env,
             root,
-            Ingest.use((ingest) => ingest.apply(pulled.fetchedAt)),
+            Ingest.use((ingest) => ingest.apply(event.instanceId, pulled.fetchedAt)),
           ),
       );
       const published = await step.do(
@@ -215,6 +215,41 @@ export class SyncWorkflow extends WorkflowEntrypoint<Env, SyncParams> {
   }
 }
 
+/** The last run started, so a new one waits until it has finished. */
+const LAST_RUN_KEY = "control/sync-run.json";
+const ACTIVE: ReadonlySet<InstanceStatus> = new Set([
+  "queued",
+  "running",
+  "waiting",
+  "waitingForPause",
+]);
+
+type StartResult = { status: "started"; id: string } | { status: "running"; id: string };
+
+/**
+ * Starts a run unless the last one is still active: every run pulls the full dump for about 15
+ * minutes, so a second one only loads the upstream. Two starts in the same instant can still both
+ * run; each stages its own dump, so neither corrupts the other.
+ */
+async function startRun(env: Env, trigger: Trigger): Promise<StartResult> {
+  const last = await env.DATA.get(LAST_RUN_KEY);
+  if (last) {
+    const { id } = JSON.parse(await last.text()) as { id: string };
+    const status = await env.SYNC_WORKFLOW.get(id)
+      .then((instance) => instance.status())
+      .then(({ status }) => status)
+      .catch((): InstanceStatus => "unknown");
+    if (ACTIVE.has(status)) return { status: "running", id };
+  }
+  const instance = await env.SYNC_WORKFLOW.create({ params: { trigger } });
+  await env.DATA.put(
+    LAST_RUN_KEY,
+    JSON.stringify({ id: instance.id, trigger, startedAt: new Date().toISOString() }),
+    { httpMetadata: { contentType: "application/json" } },
+  );
+  return { status: "started", id: instance.id };
+}
+
 function authorized(request: Request, env: Env): boolean {
   const token = env.SYNC_TOKEN ?? "";
   return (
@@ -226,10 +261,11 @@ export default {
   // Starts a run and returns; the Workflow does the work, so the 15-minute cron limit no longer
   // applies to the pull.
   async scheduled(_controller: unknown, env: Env): Promise<void> {
-    await env.SYNC_WORKFLOW.create({ params: { trigger: "cron" } });
+    await startRun(env, "cron");
   },
 
-  // POST /sync starts a run; GET /sync/<id> reports it. Disabled unless SYNC_TOKEN is set.
+  // POST /sync starts a run (409 while one is active); GET /sync/<id> reports it. Disabled unless
+  // SYNC_TOKEN is set.
   async fetch(request: Request, env: Env, _ctx: WorkerContext): Promise<Response> {
     const { pathname } = new URL(request.url);
     if (!pathname.startsWith("/sync") || !env.SYNC_TOKEN) {
@@ -239,8 +275,8 @@ export default {
       return Response.json({ status: "unauthorized" }, { status: 401 });
     }
     if (request.method === "POST" && pathname === "/sync") {
-      const instance = await env.SYNC_WORKFLOW.create({ params: { trigger: "manual" } });
-      return Response.json({ status: "started", id: instance.id }, { status: 202 });
+      const result = await startRun(env, "manual");
+      return Response.json(result, { status: result.status === "started" ? 202 : 409 });
     }
     const id = pathname.match(/^\/sync\/([\w-]+)$/)?.[1];
     if (request.method === "GET" && id) {
