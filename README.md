@@ -10,6 +10,7 @@ A phone-style voice agent that tells callers where a doctor practices, how to re
 - **Observable:** every Worker streams Effect spans and logs live to a Durable Object; a console shows a service map, traces, logs, escalations, call history, per-service cost and live provider configuration.
 - **Cost today:** ElevenLabs about $0.10–0.20 per 1–2 minute call; Cloudflare usage fits in the $5/month Workers plan with room for millions of lookups.
 - **Main risks:** the console is public by choice, the upstream only offers full dumps without stable IDs, voice recordings are kept indefinitely by ElevenLabs, and some agent behavior is enforced by prompt rather than code. See [Risks](#risks).
+- **How it was built:** in one day with oh-my-pi (`omp`) and several AI coding agents: I set the brief, the architecture and the product decisions; the coding agents wrote and deployed the code. See [How this was built](#how-this-was-built).
 
 Live: [console](https://doctor-console.it-c89.workers.dev) · [talk to the agent](https://elevenlabs.io/app/talk-to?agent_id=agent_4201m39wmxxvf76snhp94gwajr7c)
 
@@ -159,6 +160,20 @@ Measured this month in the console (live numbers are in its header):
 
 - **ElevenLabs:** about $0.10–0.20 per call of 1–2 minutes (voice minutes plus LLM tokens, e.g. 46,724 tokens in and 655 out for a 99-second call).
 - **Cloudflare:** Workers Paid plan $5/month, shared by all Workers on the account. This project's usage is a fraction of a cent at list price (e.g. `doctor-lookup` 466 requests and 15.5 CPU-seconds); R2 stays in the free tier.
+
+## How this was built
+
+Built on 24 September 2026, in one day, using [oh-my-pi](https://github.com/can1357/oh-my-pi) (`omp`) with several AI coding agents, Claude among them, working in this repository and against the live Cloudflare and ElevenLabs accounts.
+
+**My part:**
+- The brief and the architecture sketch ([docs/architecture-sketch.png](docs/architecture-sketch.png)): two services, one keeping the data fresh from the slow API and one serving callers.
+- The stack: Bun monorepo, TypeScript and Effect 4, Cloudflare, ElevenLabs Agents.
+- Product decisions: English and Czech with Romanian street names never translated; which doctor details the agent may disclose (phone, hours, languages, experience, rating; not e-mail); escalating unanswerable calls; moving the sync to a Workflow once the upstream took 15 minutes; a public console for the demo.
+- Directing and reviewing each step, and testing with real calls: several agent behaviors (tool use, listing by city and specialty, rating order, the "one moment" filler) were fixed after my test calls.
+
+**The coding agents' part:** the detailed design within that frame (the Search DB format, the telemetry hub, the staged Workflow steps), the code and tests, deployments, checking platform limits against the documentation, and this README from my direction.
+
+**How it was checked:** Biome and TypeScript on every change, 21 unit tests on the lookup, sync and schedule parsing, and end-to-end checks in production: real agent calls in English and Czech, a 15-minute sync Workflow run, the outage switch with a real escalated call, and every console panel in a browser.
 
 ## Repository
 
