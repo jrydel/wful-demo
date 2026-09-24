@@ -18,50 +18,50 @@ Live: [console](https://doctor-console.it-c89.workers.dev) · [talk to the agent
 The original sketch ([docs/architecture-sketch.png](docs/architecture-sketch.png)) as it is built now. Names from the sketch are kept in each box.
 
 ```mermaid
-flowchart LR
-  subgraph serve["Serving callers"]
-    user(("User<br/>browser today, phone next"))
-    voice["Voice service<br/>ElevenLabs: speech-to-text,<br/>text-to-speech, WebRTC"]
-    subgraph agent["Agent (ElevenLabs Agents)"]
-      prompt["Prompt / Skills<br/>system-prompt.md,<br/>find_doctor tool"]
-      context["Context<br/>Claude Haiku 4.5,<br/>conversation state"]
-    end
-    lookup["doctor-lookup<br/>Worker · Effect HttpApi<br/>in-memory search"]
+flowchart TB
+  user(("User<br/>browser today,<br/>phone next"))
+  voice["<b>Voice service</b><br/>ElevenLabs: speech-to-text,<br/>text-to-speech, WebRTC"]
+  subgraph agent["Agent · ElevenLabs Agents"]
+    direction LR
+    prompt["<b>Prompt / Skills</b><br/>system prompt,<br/>find_doctor tool"]
+    context["<b>Context</b><br/>Claude Haiku 4.5,<br/>conversation state"]
+    prompt --- context
   end
-
-  subgraph fresh["Keeping the data fresh"]
-    upstream["API<br/>client's upstream, full dump in ~15 min<br/>(directory-api stand-in)"]
-    trigger["Cron 03:00 UTC<br/>or Run sync now"]
-    subgraph workflow["directory-sync · Cloudflare Workflow"]
-      pull["1 · Pull<br/>stage the raw dump"]
-      validate["2 · Schema validation<br/>+ Deduplication<br/>Effect Schema"]
-      processor["3 · Data processor<br/>build the Search DB"]
-    end
-  end
-
+  lookup["<b>doctor-lookup</b><br/>Worker · Effect HttpApi<br/>in-memory search"]
   subgraph r2["R2 · EU jurisdiction"]
-    db[("DB<br/>doctors.json")]
-    search[("Search DB<br/>search-index.json")]
+    direction LR
+    search[("<b>Search DB</b><br/>search-index.json")]
+    db[("<b>DB</b><br/>doctors.json")]
   end
-
-  subgraph observe["Observability"]
-    hub["telemetry hub<br/>Durable Object · SQLite"]
-    console["console<br/>TanStack Start on Workers"]
+  subgraph workflow["directory-sync · Cloudflare Workflow"]
+    direction LR
+    pull["1 · Pull<br/>stage the raw dump"]
+    validate["2 · <b>Schema validation</b><br/>+ <b>Deduplication</b>"]
+    processor["3 · <b>Data processor</b><br/>build the Search DB"]
+    pull --> validate --> processor
   end
+  upstream["<b>API</b><br/>client's upstream<br/>full dump in ~15 min"]
+  trigger["Cron 03:00 UTC<br/>or Run sync now"]
 
-  user <-->|"voice · WebRTC"| voice
-  voice <--> context
-  prompt --- context
-  context <-->|"find_doctor · HTTPS + bearer"| lookup
+  user <-->|voice| voice
+  voice <--> agent
+  agent <-->|"find_doctor · HTTPS + bearer"| lookup
   lookup -->|"read, kept in memory"| search
-  trigger --> pull
+  validate -->|save| db
+  db -->|load| processor
+  processor -->|publish| search
   upstream -->|"GET /doctors"| pull
-  pull --> validate --> db
-  db --> processor --> search
-  lookup -.->|spans, logs| hub
-  workflow -.->|spans, logs| hub
-  upstream -.->|spans, logs| hub
-  hub -->|WebSocket| console
+  trigger --> pull
+```
+
+Every Worker also reports to the observability side:
+
+```mermaid
+flowchart LR
+  lookup["doctor-lookup"] -->|"spans, logs"| hub
+  sync["directory-sync"] -->|"spans, logs"| hub
+  api["directory-api"] -->|"spans, logs"| hub
+  hub["<b>telemetry hub</b><br/>Durable Object · SQLite"] -->|WebSocket| console["<b>console</b><br/>TanStack Start on Workers"]
 ```
 
 | Sketch | Built as | Where |
