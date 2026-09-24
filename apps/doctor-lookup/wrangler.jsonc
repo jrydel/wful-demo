@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doctor-lookup",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "r2_buckets": [
+    { "binding": "DATA", "bucket_name": "doctor-directory-data", "jurisdiction": "eu" }
+  ],
+  // Spans and logs go live to the telemetry hub, which the console streams.
+  "services": [{ "binding": "TELEMETRY", "service": "telemetry" }],
+  "vars": {
+    "RELOAD_INTERVAL": "10 seconds",
+    "STALE_AFTER": "48 hours"
+  },
+  // TOOL_TOKEN is a secret: `wrangler secret put TOOL_TOKEN` (locally: .dev.vars).
+  // Custom domain once the zone is on Cloudflare:
+  // "routes": [{ "pattern": "tools.example.ro", "custom_domain": true }],
+  "observability": { "enabled": true, "traces": { "enabled": true } }
+}

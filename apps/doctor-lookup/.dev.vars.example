@@ -1,0 +1,2 @@
+# Local secrets for `wrangler dev`; copy to .dev.vars. In production: wrangler secret put TOOL_TOKEN
+TOOL_TOKEN=dev-token
