@@ -1,0 +1,11 @@
+{
+  "name": "@doctor-directory/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "effect": "catalog:"
+  }
+}
