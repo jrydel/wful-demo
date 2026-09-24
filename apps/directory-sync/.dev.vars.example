@@ -1,0 +1,4 @@
+# Local settings for `wrangler dev`; copy to .dev.vars.
+# In production: wrangler secret put SOURCE_URL / wrangler secret put SYNC_TOKEN
+SOURCE_URL=http://localhost:4000/doctors
+SYNC_TOKEN=dev-sync-token

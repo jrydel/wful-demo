@@ -1,0 +1,15 @@
+{
+  "name": "@doctor-directory/directory-sync",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@doctor-directory/shared": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "wrangler": "catalog:"
+  }
+}
