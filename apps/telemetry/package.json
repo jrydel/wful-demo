@@ -1,0 +1,16 @@
+{
+  "name": "@doctor-directory/telemetry",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "typegen": "wrangler types",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@doctor-directory/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "catalog:"
+  }
+}
