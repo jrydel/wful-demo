@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "apps/directory-api/src",
+    "apps/directory-sync/src",
+    "apps/doctor-lookup/src",
+    "packages/*/src",
+    "dev/*/src"
+  ]
+}

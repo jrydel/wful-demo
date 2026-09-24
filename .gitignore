@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+
+# Dataset provided for the assignment; not published. Put it here to seed local R2.
+healthcare_data.json

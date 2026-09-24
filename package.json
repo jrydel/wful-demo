@@ -1,0 +1,30 @@
+{
+  "name": "doctor-directory",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*",
+      "dev/*"
+    ],
+    "catalog": {
+      "effect": "4.0.0-rc.117",
+      "wrangler": "4.138.0"
+    }
+  },
+  "scripts": {
+    "dev": "bun run --filter @doctor-directory/directory-api --filter @doctor-directory/dev-gateway dev",
+    "seed:local": "bun run --filter @doctor-directory/directory-api seed:local",
+    "sync:now": "curl -s -X POST localhost:3000/sync -H 'authorization: Bearer dev-sync-token'",
+    "deploy": "bun run --filter './apps/*' deploy",
+    "test": "bun test",
+    "check": "biome check . && tsc --noEmit && tsc --noEmit -p apps/telemetry && tsc --noEmit -p apps/console"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/bun": "^1.4.2",
+    "typescript": "7.0.2"
+  }
+}
