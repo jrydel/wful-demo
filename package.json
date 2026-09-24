@@ -20,6 +20,7 @@
     "sync:now": "curl -s -X POST localhost:3000/sync -H 'authorization: Bearer dev-sync-token'",
     "deploy": "bun run --filter './apps/*' deploy",
     "test": "bun test",
+    "docs:diagrams": "bun docs/diagrams/render.ts",
     "check": "biome check . && tsc --noEmit && tsc --noEmit -p apps/telemetry && tsc --noEmit -p apps/console"
   },
   "devDependencies": {

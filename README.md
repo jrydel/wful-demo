@@ -17,52 +17,19 @@ Live: [console](https://doctor-console.it-c89.workers.dev) · [talk to the agent
 
 The original sketch ([docs/architecture-sketch.png](docs/architecture-sketch.png)) as it is built now. Names from the sketch are kept in each box.
 
-```mermaid
-flowchart TB
-  user(("User<br/>browser today,<br/>phone next"))
-  voice["<b>Voice service</b><br/>ElevenLabs: speech-to-text,<br/>text-to-speech, WebRTC"]
-  subgraph agent["Agent · ElevenLabs Agents"]
-    direction LR
-    prompt["<b>Prompt / Skills</b><br/>system prompt,<br/>find_doctor tool"]
-    context["<b>Context</b><br/>Claude Haiku 4.5,<br/>conversation state"]
-    prompt --- context
-  end
-  lookup["<b>doctor-lookup</b><br/>Worker · Effect HttpApi<br/>in-memory search"]
-  subgraph r2["R2 · EU jurisdiction"]
-    direction LR
-    search[("<b>Search DB</b><br/>search-index.json")]
-    db[("<b>DB</b><br/>doctors.json")]
-  end
-  subgraph workflow["directory-sync · Cloudflare Workflow"]
-    direction LR
-    pull["1 · Pull<br/>stage the raw dump"]
-    validate["2 · <b>Schema validation</b><br/>+ <b>Deduplication</b>"]
-    processor["3 · <b>Data processor</b><br/>build the Search DB"]
-    pull --> validate --> processor
-  end
-  upstream["<b>API</b><br/>client's upstream<br/>full dump in ~15 min"]
-  trigger["Cron 03:00 UTC<br/>or Run sync now"]
-
-  user <-->|voice| voice
-  voice <--> agent
-  agent <-->|"find_doctor · HTTPS + bearer"| lookup
-  lookup -->|"read, kept in memory"| search
-  validate -->|save| db
-  db -->|load| processor
-  processor -->|publish| search
-  upstream -->|"GET /doctors"| pull
-  trigger --> pull
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/architecture-dark.svg">
+  <img alt="Architecture: the caller talks to the ElevenLabs agent, which calls doctor-lookup; doctor-lookup reads the Search DB in R2; a Cloudflare Workflow pulls the upstream API, validates and deduplicates into the DB, and publishes the Search DB." src="docs/diagrams/architecture-light.svg">
+</picture>
 
 Every Worker also reports to the observability side:
 
-```mermaid
-flowchart LR
-  lookup["doctor-lookup"] -->|"spans, logs"| hub
-  sync["directory-sync"] -->|"spans, logs"| hub
-  api["directory-api"] -->|"spans, logs"| hub
-  hub["<b>telemetry hub</b><br/>Durable Object · SQLite"] -->|WebSocket| console["<b>console</b><br/>TanStack Start on Workers"]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/observability-dark.svg">
+  <img alt="Observability: doctor-lookup, directory-sync and directory-api stream spans and logs to the telemetry hub, a Durable Object, which pushes them to the console over WebSocket." src="docs/diagrams/observability-light.svg">
+</picture>
+
+The diagrams are generated: edit `docs/diagrams/render.ts`, then `bun run docs:diagrams`.
 
 | Sketch | Built as | Where |
 |---|---|---|

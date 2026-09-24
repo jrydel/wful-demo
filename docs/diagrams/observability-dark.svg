@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="268" viewBox="0 0 1240 268" font-family='Geist, Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="Doctor directory voice agent: observability">
+<title>Doctor directory voice agent: observability</title>
+<defs>
+  <marker id="arrow-dark" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 1 1.5 L 8.5 5 L 1 8.5" fill="none" stroke="#71717a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<rect x="0.5" y="0.5" width="1239" height="267" rx="16" fill="#09090b" stroke="#27272a"/>
+
+<path d="M 250 56 C 390 56, 400 120, 520 122" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-dark)"/>
+<path d="M 250 134 H 520" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-dark)"/>
+<rect x="341.9" y="124" width="86.2" height="20" rx="10" fill="#27272a" stroke="#27272a"/>
+<text x="385" y="138" font-size="11" text-anchor="middle" fill="#e4e4e7">spans, logs</text>
+<path d="M 250 212 C 390 212, 400 148, 520 146" fill="none" stroke="#71717a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-dark)"/>
+<path d="M 800 134 H 930" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow-dark)"/>
+<rect x="828.1" y="124" width="73.80000000000001" height="20" rx="10" fill="#27272a" stroke="#27272a"/>
+<text x="865" y="138" font-size="11" text-anchor="middle" fill="#e4e4e7">WebSocket</text>
+<g>
+  <rect x="30" y="24" width="220" height="64" rx="12" fill="#18181b" stroke="#27272a"/>
+  <rect x="42" y="41" width="30" height="30" rx="8" fill="#3b82f626"/>
+  <g transform="translate(49 48) scale(0.6667)" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></g>
+  <text x="84" y="52" font-size="14" font-weight="600" fill="#fafafa">doctor-lookup</text>
+  <text x="84" y="69" font-size="12" fill="#a1a1aa">tool calls</text>
+</g>
+<g>
+  <rect x="30" y="102" width="220" height="64" rx="12" fill="#18181b" stroke="#27272a"/>
+  <rect x="42" y="119" width="30" height="30" rx="8" fill="#f9731626"/>
+  <g transform="translate(49 126) scale(0.6667)" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8l-4-4"/><path d="m12 21 4-4"/><path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284"/></g>
+  <text x="84" y="130" font-size="14" font-weight="600" fill="#fafafa">directory-sync</text>
+  <text x="84" y="147" font-size="12" fill="#a1a1aa">Workflow steps</text>
+</g>
+<g>
+  <rect x="30" y="180" width="220" height="64" rx="12" fill="#18181b" stroke="#27272a"/>
+  <rect x="42" y="197" width="30" height="30" rx="8" fill="#a855f726"/>
+  <g transform="translate(49 204) scale(0.6667)" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></g>
+  <text x="84" y="208" font-size="14" font-weight="600" fill="#fafafa">directory-api</text>
+  <text x="84" y="225" font-size="12" fill="#a1a1aa">upstream stand-in</text>
+</g>
+<g>
+  <rect x="520" y="96" width="280" height="76" rx="12" fill="#18181b" stroke="#27272a"/>
+  <rect x="532" y="119" width="30" height="30" rx="8" fill="#f59e0b26"/>
+  <g transform="translate(539 126) scale(0.6667)" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></g>
+  <text x="574" y="122.5" font-size="14" font-weight="600" fill="#fafafa">telemetry hub</text>
+  <text x="574" y="139.5" font-size="12" fill="#a1a1aa">Durable Object · SQLite</text>
+  <text x="574" y="154.5" font-size="12" fill="#a1a1aa">live spans and logs</text>
+</g>
+<g>
+  <rect x="930" y="96" width="280" height="76" rx="12" fill="#18181b" stroke="#27272a"/>
+  <rect x="942" y="119" width="30" height="30" rx="8" fill="#0ea5e926"/>
+  <g transform="translate(949 126) scale(0.6667)" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></g>
+  <text x="984" y="122.5" font-size="14" font-weight="600" fill="#fafafa">console</text>
+  <text x="984" y="139.5" font-size="12" fill="#a1a1aa">TanStack Start on Workers</text>
+  <text x="984" y="154.5" font-size="12" fill="#a1a1aa">map, traces, logs, cost</text>
+</g>
+</svg>

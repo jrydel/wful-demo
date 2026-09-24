@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="672" viewBox="0 0 1240 672" font-family='Geist, Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="Doctor directory voice agent: architecture">
+<title>Doctor directory voice agent: architecture</title>
+<defs>
+  <marker id="arrow-light" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 1 1.5 L 8.5 5 L 1 8.5" fill="none" stroke="#a1a1aa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<rect x="0.5" y="0.5" width="1239" height="671" rx="16" fill="#ffffff" stroke="#e4e4e7"/>
+<g>
+  <rect x="490" y="42" width="400" height="128" rx="16" fill="#f4f4f599" stroke="#d4d4d8" stroke-dasharray="4 4"/>
+  <circle cx="510" cy="61" r="3.5" fill="#6366f1"/>
+  <text x="520" y="65" font-size="11" font-weight="600" letter-spacing="0.06em" fill="#71717a">AGENT · ELEVENLABS</text>
+</g>
+<g>
+  <rect x="500" y="242" width="710" height="128" rx="16" fill="#f4f4f599" stroke="#d4d4d8" stroke-dasharray="4 4"/>
+  <circle cx="520" cy="261" r="3.5" fill="#10b981"/>
+  <text x="530" y="265" font-size="11" font-weight="600" letter-spacing="0.06em" fill="#71717a">R2 · EU JURISDICTION</text>
+</g>
+<g>
+  <rect x="260" y="442" width="950" height="128" rx="16" fill="#f4f4f599" stroke="#d4d4d8" stroke-dasharray="4 4"/>
+  <circle cx="280" cy="461" r="3.5" fill="#f97316"/>
+  <text x="290" y="465" font-size="11" font-weight="600" letter-spacing="0.06em" fill="#71717a">DIRECTORY-SYNC · CLOUDFLARE WORKFLOW</text>
+</g>
+<path d="M 190 116 H 250" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)" marker-start="url(#arrow-light)"/>
+<rect x="192.4" y="54" width="55.2" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="220" y="68" font-size="11" text-anchor="middle" fill="#3f3f46">WebRTC</text>
+<path d="M 450 116 H 490" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)" marker-start="url(#arrow-light)"/>
+<path d="M 890 116 H 950" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)" marker-start="url(#arrow-light)"/>
+<rect x="876.9" y="16" width="86.2" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="920" y="30" font-size="11" text-anchor="middle" fill="#3f3f46">find_doctor</text>
+<path d="M 1070 154 V 278" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<rect x="999" y="206" width="142" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="1070" y="220" font-size="11" text-anchor="middle" fill="#3f3f46">read, kept in memory</text>
+<path d="M 200 516 H 290" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<rect x="198.8" y="506" width="92.4" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="245" y="520" font-size="11" text-anchor="middle" fill="#3f3f46">GET /doctors</text>
+<path d="M 200 608 H 240 V 540 H 290" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<rect x="215.5" y="582" width="49" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="240" y="596" font-size="11" text-anchor="middle" fill="#3f3f46">start</text>
+<path d="M 490 516 H 520" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<path d="M 645 478 V 354" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<rect x="623.6" y="406" width="42.8" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="645" y="420" font-size="11" text-anchor="middle" fill="#3f3f46">save</text>
+<path d="M 770 316 H 860 V 516 H 950" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<rect x="838.6" y="406" width="42.8" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="860" y="420" font-size="11" text-anchor="middle" fill="#3f3f46">load</text>
+<path d="M 1070 478 V 354" fill="none" stroke="#a1a1aa" stroke-width="1.5" marker-end="url(#arrow-light)"/>
+<rect x="1039.3" y="406" width="61.4" height="20" rx="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+<text x="1070" y="420" font-size="11" text-anchor="middle" fill="#3f3f46">publish</text>
+<g>
+  <rect x="30" y="78" width="160" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="42" y="101" width="30" height="30" rx="8" fill="#f4f4f5"/>
+  <g transform="translate(49 108) scale(0.6667)" fill="none" stroke="#18181b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>
+  <text x="84" y="104.5" font-size="14" font-weight="600" fill="#09090b">User</text>
+  <text x="84" y="121.5" font-size="12" fill="#71717a">Browser today,</text>
+  <text x="84" y="136.5" font-size="12" fill="#71717a">phone next</text>
+</g>
+<g>
+  <rect x="250" y="78" width="200" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="262" y="101" width="30" height="30" rx="8" fill="#6366f126"/>
+  <g transform="translate(269 108) scale(0.6667)" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></g>
+  <text x="304" y="104.5" font-size="14" font-weight="600" fill="#09090b">Voice service</text>
+  <text x="304" y="121.5" font-size="12" fill="#71717a">ElevenLabs · WebRTC</text>
+  <text x="304" y="136.5" font-size="12" fill="#71717a">speech-to-text, TTS</text>
+</g>
+<g>
+  <rect x="506" y="78" width="180" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="518" y="101" width="30" height="30" rx="8" fill="#6366f126"/>
+  <g transform="translate(525 108) scale(0.6667)" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></g>
+  <text x="560" y="104.5" font-size="14" font-weight="600" fill="#09090b">Prompt / Skills</text>
+  <text x="560" y="121.5" font-size="12" fill="#71717a">System prompt,</text>
+  <text x="560" y="136.5" font-size="12" fill="#71717a">find_doctor tool</text>
+</g>
+<g>
+  <rect x="696" y="78" width="180" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="708" y="101" width="30" height="30" rx="8" fill="#6366f126"/>
+  <g transform="translate(715 108) scale(0.6667)" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></g>
+  <text x="750" y="104.5" font-size="14" font-weight="600" fill="#09090b">Context</text>
+  <text x="750" y="121.5" font-size="12" fill="#71717a">Claude Haiku 4.5,</text>
+  <text x="750" y="136.5" font-size="12" fill="#71717a">conversation state</text>
+</g>
+<g>
+  <rect x="950" y="78" width="240" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="962" y="101" width="30" height="30" rx="8" fill="#3b82f626"/>
+  <g transform="translate(969 108) scale(0.6667)" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></g>
+  <text x="1004" y="104.5" font-size="14" font-weight="600" fill="#09090b">doctor-lookup</text>
+  <text x="1004" y="121.5" font-size="12" fill="#71717a">Worker · Effect HttpApi</text>
+  <text x="1004" y="136.5" font-size="12" fill="#71717a">in-memory search</text>
+</g>
+<g>
+  <rect x="520" y="278" width="250" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="532" y="301" width="30" height="30" rx="8" fill="#10b98126"/>
+  <g transform="translate(539 308) scale(0.6667)" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></g>
+  <text x="574" y="304.5" font-size="14" font-weight="600" fill="#09090b">DB</text>
+  <text x="574" y="321.5" font-size="12" fill="#71717a">doctors.json</text>
+  <text x="574" y="336.5" font-size="12" fill="#71717a">the last good pull</text>
+</g>
+<g>
+  <rect x="950" y="278" width="240" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="962" y="301" width="30" height="30" rx="8" fill="#10b98126"/>
+  <g transform="translate(969 308) scale(0.6667)" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></g>
+  <text x="1004" y="304.5" font-size="14" font-weight="600" fill="#09090b">Search DB</text>
+  <text x="1004" y="321.5" font-size="12" fill="#71717a">search-index.json</text>
+  <text x="1004" y="336.5" font-size="12" fill="#71717a">names, cities, specialties</text>
+</g>
+<g>
+  <rect x="30" y="478" width="170" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="42" y="501" width="30" height="30" rx="8" fill="#a855f726"/>
+  <g transform="translate(49 508) scale(0.6667)" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></g>
+  <text x="84" y="504.5" font-size="14" font-weight="600" fill="#09090b">API</text>
+  <text x="84" y="521.5" font-size="12" fill="#71717a">Client's upstream,</text>
+  <text x="84" y="536.5" font-size="12" fill="#71717a">full dump ~15 min</text>
+</g>
+<g>
+  <rect x="30" y="576" width="170" height="64" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="42" y="593" width="30" height="30" rx="8" fill="#f4f4f5"/>
+  <g transform="translate(49 600) scale(0.6667)" fill="none" stroke="#18181b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g>
+  <text x="84" y="604" font-size="14" font-weight="600" fill="#09090b">Cron 03:00 UTC</text>
+  <text x="84" y="621" font-size="12" fill="#71717a">or Run sync now</text>
+</g>
+<g>
+  <rect x="290" y="478" width="200" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="302" y="501" width="30" height="30" rx="8" fill="#f9731626"/>
+  <g transform="translate(309 508) scale(0.6667)" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8l-4-4"/><path d="m12 21 4-4"/><path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284"/></g>
+  <text x="344" y="504.5" font-size="14" font-weight="600" fill="#09090b">1 · Pull</text>
+  <text x="344" y="521.5" font-size="12" fill="#71717a">Stage the raw dump,</text>
+  <text x="344" y="536.5" font-size="12" fill="#71717a">no time limit</text>
+</g>
+<g>
+  <rect x="520" y="478" width="250" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="532" y="501" width="30" height="30" rx="8" fill="#f9731626"/>
+  <g transform="translate(539 508) scale(0.6667)" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></g>
+  <text x="574" y="504.5" font-size="14" font-weight="600" fill="#09090b">2 · Schema validation</text>
+  <text x="574" y="521.5" font-size="12" fill="#71717a">+ Deduplication,</text>
+  <text x="574" y="536.5" font-size="12" fill="#71717a">Effect Schema</text>
+</g>
+<g>
+  <rect x="950" y="478" width="240" height="76" rx="12" fill="#ffffff" stroke="#e4e4e7"/>
+  <rect x="962" y="501" width="30" height="30" rx="8" fill="#f9731626"/>
+  <g transform="translate(969 508) scale(0.6667)" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v2"/><path d="M12 2v2"/><path d="M17 20v2"/><path d="M17 2v2"/><path d="M2 12h2"/><path d="M2 17h2"/><path d="M2 7h2"/><path d="M20 12h2"/><path d="M20 17h2"/><path d="M20 7h2"/><path d="M7 20v2"/><path d="M7 2v2"/><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/></g>
+  <text x="1004" y="512" font-size="14" font-weight="600" fill="#09090b">3 · Data processor</text>
+  <text x="1004" y="529" font-size="12" fill="#71717a">Build the Search DB</text>
+</g>
+</svg>
