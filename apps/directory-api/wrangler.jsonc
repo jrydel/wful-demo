@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "directory-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "r2_buckets": [{ "binding": "DEMO", "bucket_name": "doctor-directory-demo" }],
+  // Spans and logs go live to the telemetry hub, which the console streams.
+  "services": [{ "binding": "TELEMETRY", "service": "telemetry" }],
+  "vars": { "DIRECTORY_DELAY": "15 minutes" },
+  "observability": { "enabled": true }
+}
