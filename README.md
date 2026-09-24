@@ -136,10 +136,33 @@ The [console](https://doctor-console.it-c89.workers.dev) shows:
 
 - **More callers.** Lookups are CPU-light (about 33 ms of CPU per request, measured in production) and Workers scale per request across data centers; the Workers plan includes 10 M requests a month. The limit is the ElevenLabs agent's concurrency, a plan setting.
 - **Phone lines and languages.** Attach Twilio numbers to the same agent; add language presets. Street names stay Romanian by rule.
-- **Bigger directories.** Today the whole Search DB (3.1 MB source) sits in each instance's memory (128 MB limit). At a few hundred thousand records, shard the Search DB by city or county in R2, or move it to D1 for indexed queries; the lookup contract stays the same.
+- **Bigger directories.** See [How far in-memory search goes](#how-far-in-memory-search-goes) below.
 - **Bigger or slower dumps.** Workflow steps have no wall-clock limit; CPU per step can be raised to 5 minutes. With a streaming parser and staged chunks the pull scales past what one step holds in memory; an incremental upstream API removes the full pull altogether.
 - **More sources or clinic networks.** One Workflow per source (parallel steps), one Search DB per network, the same lookup code.
 - **Observability.** One Durable Object handles this traffic easily; at higher volume shard the hub by service or day, or export spans to an OTLP backend.
+
+### How far in-memory search goes
+
+Each `doctor-lookup` instance holds the whole Search DB in memory. Measured on the sample data: **347 bytes per doctor** serialized and **~380 bytes per doctor** in the heap. A Worker has 128 MB, so one instance tops out around **260,000 doctors**, and a new instance would first parse ~90 MB. Comfortable up to roughly 100–200 thousand: a whole country (Romania has ~60,000 doctors).
+
+For scale: WHO counts about 13 million physicians worldwide, so realistic targets are a country, the EU (~2 M) or the world (~13 M). A billion is useful as a test of the design.
+
+What keeps it scalable at any size: callers never scan the directory. Every question is narrow (a surname, usually a city, maybe a specialty, day or language), so each lookup can read a small slice instead of holding everything.
+
+| Scale | Lookup | Ingest |
+|---|---|---|
+| **up to ~200 k** (today, one country) | Whole index in memory; no change | Full daily dump, as now |
+| **~200 k – ~20 M** (EU, world) | Search DB sharded by city in R2; a lookup loads only the shards it needs (kilobytes to a few MB) and keeps recent ones in memory; a surname-keyed index covers cross-city name lookups | Full dump processed in parallel chunks |
+| **~1 B** | Distributed key-value or wide-column store (Cassandra/ScyllaDB, DynamoDB or Workers KV) with precomputed answers: `phonetic(surname)#city → ids`, `city#specialty → ids by rating with working days`, `id → record`. Each lookup is a few point reads of ~10 ms, never a scan. "Did you mean" from precomputed phonetic keys, or a search engine (e.g. OpenSearch) for that path only | A daily full dump is impossible (~450 GB in one response): the upstream must send changes since a timestamp with **stable IDs**, or bulk-export files to object storage for parallel processing |
+
+What else changes at a billion:
+
+- **Deduplication** needs stable IDs or probabilistic record matching; dropping exact copies is no longer enough.
+- **Publishing** can no longer swap one file atomically; each shard is versioned and switched on its own.
+- **Conversations:** name collisions multiply, so the agent must collect city (and specialty or clinic) before looking up. The lookup already returns `ask_for` with the next field to ask, and lists stay capped at three names.
+- **Cost** moves from serving to ingesting: reads stay cheap (Workers KV about $0.50 per million), keeping a billion records current is the expense.
+
+The agent and the `find_doctor` contract stay the same at every tier; only the data layer behind `doctor-lookup` and the sync change.
 
 ## Cost
 
