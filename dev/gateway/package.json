@@ -1,0 +1,11 @@
+{
+  "name": "@doctor-directory/dev-gateway",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev -c wrangler.jsonc -c ../../apps/doctor-lookup/wrangler.jsonc -c ../../apps/directory-sync/wrangler.jsonc -c ../../apps/telemetry/wrangler.jsonc --port 3000 --inspector-port 9230 --persist-to ../../.wrangler/state"
+  },
+  "devDependencies": {
+    "wrangler": "catalog:"
+  }
+}

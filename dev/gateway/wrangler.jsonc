@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dev-gateway",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "services": [
+    { "binding": "LOOKUP", "service": "doctor-lookup" },
+    { "binding": "SYNC", "service": "directory-sync" },
+    { "binding": "TELEMETRY", "service": "telemetry" }
+  ]
+}
