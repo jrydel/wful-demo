@@ -1,0 +1,58 @@
+{
+  "name": "find_doctor",
+  "description": "Look up doctors. Call it as soon as you know the doctor's name; add city and specialty when the caller has said them. A found result gives clinic, address, phone, hours, languages, experience and rating. Without a name, pass city and specialty (and optionally day, time, language) to list who practices there, best rated first.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "The doctor's name as the caller said it, e.g. 'Daria Munteanu' or 'paní doktorka Munteanu'. Omit to list doctors by city and specialty."
+      },
+      "city": {
+        "type": "string",
+        "description": "City or county in its Romanian spelling, e.g. 'Ploiesti', 'Cluj', 'Bucharest' (not 'Bukurešť'). Omit if unknown."
+      },
+      "specialty": {
+        "type": "string",
+        "enum": [
+          "Cardiology",
+          "Dermatology",
+          "Endocrinology",
+          "ENT",
+          "Family Medicine",
+          "Gastroenterology",
+          "Infectious Diseases",
+          "Internal Medicine",
+          "Nephrology",
+          "Neurology",
+          "Obstetrics and Gynecology",
+          "Oncology",
+          "Ophthalmology",
+          "Orthopedics",
+          "Pediatrics",
+          "Psychiatry",
+          "Pulmonology",
+          "Radiology",
+          "Rheumatology",
+          "Urology"
+        ],
+        "description": "The caller's words mapped to one value, e.g. 'gynekolog' -> 'Obstetrics and Gynecology', 'ORL' or 'ušní' -> 'ENT', 'praktický lékař' -> 'Family Medicine'. Omit if unknown."
+      },
+      "day": {
+        "type": "string",
+        "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "description": "Only when listing: the weekday the caller wants a doctor, already resolved from \"today\", \"tomorrow\" or \"next Monday\". Omit otherwise."
+      },
+      "time": {
+        "type": "string",
+        "description": "Only with day: the hour the caller wants, 24-hour Romanian time as HH:MM, e.g. \"14:30\". Omit otherwise."
+      },
+      "language": {
+        "type": "string",
+        "enum": ["Romanian", "English", "French", "German", "Spanish", "Hungarian", "Italian"],
+        "description": "Only when listing: a language the doctor must speak. Omit otherwise."
+      }
+    },
+    "required": []
+  }
+}
