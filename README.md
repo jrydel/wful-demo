@@ -101,12 +101,34 @@ The [console](https://doctor-console.it-c89.workers.dev) shows:
 
 ## Scaling
 
-- **More callers.** Lookups are CPU-light (about 33 ms of CPU per request, measured in production) and Workers scale per request across data centers; the Workers plan includes 10 M requests a month. The limit is the ElevenLabs agent's concurrency, a plan setting.
+- **More callers.** See [Scaling with traffic](#scaling-with-traffic) below.
 - **Phone lines and languages.** Attach Twilio numbers to the same agent; add language presets. Street names stay Romanian by rule.
 - **Bigger directories.** See [How far in-memory search goes](#how-far-in-memory-search-goes) below.
 - **Bigger or slower dumps.** Workflow steps have no wall-clock limit; CPU per step can be raised to 5 minutes. With a streaming parser and staged chunks the pull scales past what one step holds in memory; an incremental upstream API removes the full pull altogether.
 - **More sources or clinic networks.** One Workflow per source (parallel steps), one Search DB per network, the same lookup code.
-- **Observability.** One Durable Object handles this traffic easily; at higher volume shard the hub by service or day, or export spans to an OTLP backend.
+- **Observability.** The telemetry hub is a single Durable Object; see [Scaling with traffic](#scaling-with-traffic) for where it saturates and what to change.
+
+### Scaling with traffic
+
+A 1–2 minute call makes about 1–3 `find_doctor` lookups, so even 1,000 simultaneous calls are only ~50–150 lookups per second: little for Cloudflare. The limits are elsewhere.
+
+| Part | How it scales | Where it stops | What to change |
+|---|---|---|---|
+| **ElevenLabs agent** | ElevenLabs runs the speech models and the LLM | **The first real limit:** capped at 3 concurrent calls and 50 a day (demo sizing); the ceiling is set by the ElevenLabs plan; overflow bursting is available but off | Raise the limits and plan; Enterprise for high volume |
+| **doctor-lookup** | Workers start instances automatically near the caller; no shared state | ~33 ms of CPU per lookup; a new instance first loads the 2.4 MB index (~340–370 ms in traces); warm lookups ~140–350 ms end to end, cold up to ~1.1 s | Nothing at this scale; beyond one country, shard the Search DB ([below](#how-far-in-memory-search-goes)) |
+| **R2** | Parallel reads | Each warm instance checks for a new index at most every 10 s: with 1,000 instances ~8.6 M checks a day, about $3/day | Cache the version check (e.g. in KV) |
+| **directory-sync Workflow** | Independent of caller traffic | One run a day | Nothing |
+| **telemetry hub** | **Does not scale:** one Durable Object, one request at a time | Every lookup sends ~10 events in 1–2 batches, written to SQLite and broadcast to open consoles; Cloudflare's guidance is roughly 1,000 requests per second per object, so it saturates in the hundreds of lookups per second. Callers are not affected (reporting never blocks a lookup and failures are ignored), but events are lost | Sample traces (e.g. 1–10%, always keep errors and escalations), shard the hub by service or time, or export to an analytics store |
+| **console** | Anyone can open it | Every open browser queries the ElevenLabs and Cloudflare APIs (cached a minute per browser); many viewers hit their rate limits | Cache on the server; put it behind Cloudflare Access |
+
+**Cost is dominated by ElevenLabs.** 10,000 calls a day at ~$0.15 each is ~$1,500/day (~$45k/month) at list price. The same traffic is ~30k lookups a day, ~1 M Workers requests a month: still inside the $5 plan, which includes 10 M. The levers are call length, tokens per turn and ElevenLabs pricing, not Cloudflare.
+
+**Before real traffic, in order:**
+
+1. Raise the ElevenLabs agent limits.
+2. Sample telemetry, so the single hub is not the part that falls over.
+3. Rate-limit the public `find_doctor` endpoint: it requires a bearer token but has no request limit.
+4. Put the console behind Cloudflare Access, which also removes its per-viewer API load.
 
 ### How far in-memory search goes
 
